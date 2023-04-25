@@ -1,0 +1,49 @@
+import numpy as np
+from PIL import Image
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import cv2
+from sklearn.cluster import DBSCAN
+
+# Set the scaling factor, step size, and darkness threshold
+scale_percent = 75
+step_size = 10
+darkness_threshold = 150
+
+# Load the color image
+image = cv2.imread(r"C:\Users\Darin Wintjen\OneDrive\Documents\Dusty's Plants\Topdown_1.jpg")
+
+# Calculate the new dimensions of the image
+width = int(image.shape[1] * scale_percent / 100)
+height = int(image.shape[0] * scale_percent / 100)
+dim = (width, height)
+# Resize the image
+resized = cv2.resize(image, dim, interpolation=cv2.INTER_AREA)
+
+# Convert the resized image to grayscale
+img = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+
+# Apply the darkness threshold
+thresholded = img.copy()
+thresholded[thresholded < darkness_threshold] = 0
+
+# Get the pixel values as a 2D numpy array
+pixels = np.array(thresholded)
+
+# Create 3D coordinates and colors for each pixel
+x, y = np.meshgrid(np.arange(0, pixels.shape[1], step_size), np.arange(0, pixels.shape[0], step_size))
+z = pixels[::step_size, ::step_size]
+colors = resized[::step_size, ::step_size, :].reshape(-1, 3)
+
+# Perform DBSCAN clustering on the 3D points
+dbscan = DBSCAN(eps=35, min_samples=20)
+clusters = dbscan.fit_predict(np.column_stack((x.ravel(), y.ravel(), z.ravel())))
+
+# Plot the clustered points in 3D space
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.scatter(x.ravel()[clusters!=-1], y.ravel()[clusters!=-1], z.ravel()[clusters!=-1], c=clusters[clusters!=-1], cmap='tab20c', s=1)
+ax.set_xlabel('X')
+ax.set_ylabel('Y')
+ax.set_zlabel('Z')
+plt.show()
